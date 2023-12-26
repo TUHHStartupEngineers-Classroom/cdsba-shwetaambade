@@ -85,13 +85,109 @@ code
 Add a language to syntax highlight code blocks:
 
 ```{r}
-1 + 1
+# Define probabilities
+P_B <- 0.3  # Replace with the actual probability of being not on time
+P_Bbar <- 1 - P_B  # Probability of being on time
+
+P_A_given_B <- 0.4  # Probability of having a change in scope given being not on time
+P_A_given_Bbar <- 0.2  # Probability of having a change in scope given being on time
+
+# Calculate probabilities
+P_B_intersection_A <- P_B * P_A_given_B
+P_B_intersection_Abar <- P_Bbar * P_A_given_Bbar
+P_Bbar_intersection_A <- P_Bbar * (1 - P_A_given_Bbar)  # Probability of not having a change in scope given being on time
+P_Bbar_intersection_Abar <- P_B * (1 - P_A_given_B)  # Probability of not having a change in scope given being not on time
+
+# Sum of all four probabilities
+Sum_of_Probabilities <- P_B_intersection_A + P_B_intersection_Abar + P_Bbar_intersection_A + P_Bbar_intersection_Abar
+
+# Print the results
+cat("P(B intersection A):", P_B_intersection_A, "\n")
+cat("P(B intersection Abar):", P_B_intersection_Abar, "\n")
+cat("P(Bbar intersection A):", P_Bbar_intersection_A, "\n")
+cat("P(Bbar intersection Abar):", P_Bbar_intersection_Abar, "\n")
+cat("Sum of all four probabilities:", Sum_of_Probabilities, "\n")
+
 ```
 
 ```{r}
-cars
+# Load tidyverse package
+library(tidyverse)
+
+# Number of observations
+n <- 1000
+
+# Create tibble
+app_usage <- tibble(
+  # Create user_id in increasing order
+  user_id = 1:n,
+  # Randomly sample if smartphone was used
+  smartphone = rbinom(n, 1, 0.4),
+  # Sample if tablet was used. More likely if smartphone was not used.
+  tablet = ifelse(smartphone == 1, rbinom(n, 1, 0.2), rbinom(n, 1, 0.5)),
+  # Sample if computer was used. More likely if tablet was not used.
+  computer = ifelse(tablet == 1, rbinom(n, 1, 0.1), rbinom(n, 1, 0.3))
+)
+
+# If no device has a value of 1, we set smartphone to 1
+app_usage <- app_usage %>%
+  rowwise() %>% 
+  mutate(smartphone = ifelse(sum(smartphone, tablet, computer) == 0, 1, smartphone))
+
+# Set of phone, tablet and computer users
+set_phon <- which(app_usage$smartphone == 1)
+set_tabl <- which(app_usage$tablet == 1)
+set_comp <- which(app_usage$computer == 1)
+
+# List of all sets
+sets_all <- list(set_phon, set_tabl, set_comp)
+
+# Calculate the sizes of sets and intersections
+size_A <- 423
+size_B <- 278
+size_C <- 100
+size_A_intersection_B <- 73
+size_A_intersection_C <- 88
+size_B_intersection_C <- 33
+size_A_intersection_B_intersection_C <- 5
+
+# Total number of customers
+total_customers <- n
+
+# Calculate the percentages
+percentage_all_three <- (size_A_intersection_B_intersection_C / total_customers) * 100
+percentage_at_least_two <- ((size_A_intersection_B + size_A_intersection_C + size_B_intersection_C + size_A_intersection_B_intersection_C) / total_customers) * 100
+percentage_only_one <- ((size_A - size_A_intersection_B - size_A_intersection_C + size_A_intersection_B_intersection_C +
+                          size_B - size_A_intersection_B - size_B_intersection_C + size_A_intersection_B_intersection_C +
+                          size_C - size_A_intersection_C - size_B_intersection_C + size_A_intersection_B_intersection_C) / total_customers) * 100
+
+# Print the results
+cat("Percentage of customers using all three devices:", percentage_all_three, "%\n")
+cat("Percentage of customers using at least two devices:", percentage_at_least_two, "%\n")
+cat("Percentage of customers using only one device:", percentage_only_one, "%\n")
+
+
 ```
 
 ```{r}
-plot(cars)
+# Given probabilities
+P_B_given_A <- 0.97
+P_B_given_Abar <- 0.01
+P_A <- 0.04
+
+# Calculate P(B)
+P_B <- P_B_given_A * P_A + P_B_given_Abar * (1 - P_A)
+
+# Calculate P(A | B) and P(A^c | B) using Bayes' Theorem
+P_A_given_B <- P_B_given_A * P_A / P_B
+P_Abar_given_B <- P_B_given_Abar * (1 - P_A) / P_B
+
+# Fill in the gaps in the sentence
+percentage_A_given_B <- round(P_A_given_B * 100, 2)
+percentage_Abar_given_B <- round(P_Abar_given_B * 100, 2)
+
+# Print the results
+cat("These results show that in case the alarm is triggered, there is a possibility of about",
+    percentage_A_given_B, "% that the product is flawless and a probability of about",
+    percentage_Abar_given_B, "% that the product is faulty.")
 ```
