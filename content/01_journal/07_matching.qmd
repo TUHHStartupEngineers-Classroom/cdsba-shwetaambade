@@ -2,6 +2,56 @@
 title: "Matching and Subclassification"
 ---
 
-::: callout-note
-You can delete everything in here and start fresh.
-:::
+# Load necessary libraries
+library(MatchIt)
+library(tidyverse)
+library(dagitty)
+
+# Load the data
+data <- readRDS("C:\Users\Shweta\Documents\GitHub\cdsba-shwetaambade\data\membership.rds")
+
+# Check the relationships between variables and draw a DAG
+# Assuming a hypothetical structure, you should customize this based on your actual data and knowledge.
+dag <- dagitty('dag {
+  Sex -> Plus_Membership
+  Age -> Plus_Membership
+  Pre_Avg_Purch -> Plus_Membership
+  Plus_Membership -> Sales
+}')
+
+# Plot the DAG
+plot(dag)
+
+# Compute a naive estimate of the average treatment effect
+naive_estimate <- with(data, mean(Sales[Plus_Membership == 1]) - mean(Sales[Plus_Membership == 0]))
+
+# Use (Coarsened) Exact Matching
+# Assuming a binary treatment (Plus_Membership) and a binary outcome (Sales)
+exact_match_data <- matchit(Plus_Membership ~ Age + Sex + Pre_Avg_Purch, data = data, method = "exact")
+
+# Estimate treatment effects using exact matching
+exact_match_estimate <- with(data, 
+                             mean(Sales[exact_match_data$match.matrix == 1]) - mean(Sales[exact_match_data$match.matrix == 0]))
+
+# Use Nearest-Neighbor Matching
+nn_match_data <- matchit(Plus_Membership ~ Age + Sex + Pre_Avg_Purch, data = data, method = "nearest")
+
+# Estimate treatment effects using nearest-neighbor matching
+nn_match_estimate <- with(data, 
+                          mean(Sales[nn_match_data$match.matrix == 1]) - mean(Sales[nn_match_data$match.matrix == 0]))
+
+# Use Inverse Probability Weighting (IPW)
+# Assuming logistic regression model for propensity score estimation
+ps_model <- glm(Plus_Membership ~ Age + Sex + Pre_Avg_Purch, data = data, family = "binomial")
+data$ps <- predict(ps_model, type = "response")
+
+# Estimate treatment effects using IPW
+ipw_estimate <- with(data, 
+                     sum((Sales / data$ps) * (Plus_Membership == 1)) / sum(1 / data$ps) - 
+                     sum((Sales / (1 - data$ps)) * (Plus_Membership == 0)) / sum(1 / (1 - data$ps)))
+
+# Print the results
+cat("Naive Estimate:", naive_estimate, "\n")
+cat("Exact Matching Estimate:", exact_match_estimate, "\n")
+cat("Nearest-Neighbor Matching Estimate:", nn_match_estimate, "\n")
+cat("Inverse Probability Weighting Estimate:", ipw_estimate, "\n")
