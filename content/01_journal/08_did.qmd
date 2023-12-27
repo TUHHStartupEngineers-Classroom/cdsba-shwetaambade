@@ -2,6 +2,46 @@
 title: "Difference-in-Differences"
 ---
 
-::: callout-note
-You can delete everything in here and start fresh.
-:::
+# Load necessary libraries
+library(tidyverse)
+
+# Load the data
+data <- readRDS("C:\Users\Shweta\Documents\GitHub\cdsba-shwetaambade\data\hospdd.rds")
+
+# Filter data for treated and control groups before and after treatment
+before_treated <- data %>%
+  filter(treatment_status == 1, month < treatment_month) %>%
+  group_by(hospital_id) %>%
+  summarise(mean_satisfaction_before = mean(satisfaction_score))
+
+after_treated <- data %>%
+  filter(treatment_status == 1, month >= treatment_month) %>%
+  group_by(hospital_id) %>%
+  summarise(mean_satisfaction_after = mean(satisfaction_score))
+
+before_control <- data %>%
+  filter(treatment_status == 0, month < treatment_month) %>%
+  group_by(hospital_id) %>%
+  summarise(mean_satisfaction_before = mean(satisfaction_score))
+
+after_control <- data %>%
+  filter(treatment_status == 0, month >= treatment_month) %>%
+  group_by(hospital_id) %>%
+  summarise(mean_satisfaction_after = mean(satisfaction_score))
+
+# Install and load necessary library
+'install.packages("plm")
+library(plm)
+
+# Convert month and hospital_id to factors
+data$month <- as.factor(data$month)
+data$hospital_id <- as.factor(data$hospital_id)
+
+# Specify the regression model
+model <- plm(satisfaction_score ~ treatment_status + as.factor(month) + as.factor(hospital_id), 
+             data = data, 
+             index = c("hospital_id", "month"), 
+             model = "fd")
+
+# Print the regression results
+summary(model)
